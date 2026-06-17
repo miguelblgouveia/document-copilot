@@ -13,7 +13,7 @@ uv add --dev pytest ruff
 
 ## Database migrations
 
-Alembic owns database schema changes for this project. SQLAlchemy models describe the app tables, and Alembic migrations apply those changes to Supabase Postgres.
+Alembic owns database schema changes for this project. SQLAlchemy models describe the app tables, and Alembic migrations apply those changes to Supabase Postgres (local Docker stack for development, hosted Supabase for shared/prod environments).
 
 Initialize Alembic once from `backend/`:
 
@@ -21,7 +21,10 @@ Initialize Alembic once from `backend/`:
 uv run alembic init alembic
 ```
 
-Configure `alembic/env.py` to import the app's SQLAlchemy metadata and read the direct database URL from `app.config.settings`. Use the direct/session Supabase database connection, not the transaction pooler URL, for migrations.
+Configure `alembic/env.py` to import the app's SQLAlchemy metadata and read the database URL from `app.config.settings`.
+
+- Local Supabase stack: use `postgresql://postgres:postgres@127.0.0.1:54322/postgres`.
+- Hosted Supabase: use the direct/session DB host for migrations (avoid transaction pooler for migration workflows unless explicitly required by network constraints).
 
 Create a migration after changing SQLAlchemy models:
 
@@ -32,7 +35,7 @@ uv run alembic revision --autogenerate -m "add document tables"
 Always review the generated migration. Add explicit operations for Supabase/Postgres features that autogenerate cannot reliably infer:
 
 - `create extension if not exists vector`
-- `vector(1536)` columns
+- `vector(768)` columns
 - generated `tsvector` columns
 - HNSW and GIN indexes
 - RLS enablement and policies
@@ -46,6 +49,7 @@ uv run alembic upgrade head
 ## Run
 
 ```bash
+supabase start
 cd backend
 uv sync
 uv run alembic upgrade head

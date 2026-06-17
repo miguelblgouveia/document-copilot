@@ -295,11 +295,11 @@ Hybrid retrieval runs two bounded queries against `document_chunks`: a semantic 
 
 ## Schema Management
 
-Database schema changes are managed from the backend with SQLAlchemy models and Alembic migrations. Supabase is the hosted Postgres database, but the Supabase dashboard is not the source of truth for table definitions.
+Database schema changes are managed from the backend with SQLAlchemy models and Alembic migrations. For development, Supabase runs locally via Docker; hosted Supabase can still be used for shared/prod environments. The Supabase dashboard/Studio is not the source of truth for table definitions.
 
 The workflow is:
 
-1. Update SQLAlchemy models in `app/database/models.py`.
+1. Update SQLAlchemy models in `app/database/models/`.
 2. Generate a candidate migration with `uv run alembic revision --autogenerate -m "<change>"`.
 3. Review the generated migration file in `backend/alembic/versions/`.
 4. Add explicit migration operations for Postgres/Supabase features that autogenerate cannot infer reliably.
@@ -309,14 +309,14 @@ The workflow is:
 Normal tables and ordinary indexes should be represented in SQLAlchemy models where practical. The following should be written explicitly in migrations with `op.execute()` or carefully reviewed Alembic operations:
 
 - `create extension if not exists vector`
-- `vector(1536)` embedding columns if the SQLAlchemy type renderer is not sufficient
+- `vector(768)` embedding columns if the SQLAlchemy type renderer is not sufficient
 - generated `tsvector` columns
 - HNSW indexes for vector search
 - GIN indexes for full-text search and JSON metadata
 - RLS enablement and policies
 - grants or Supabase role-specific permissions
 
-Alembic must connect with Supabase's direct/session database connection string. Do not run migrations through the transaction pooler URL, because schema migrations, extension setup, and index creation require session-level database behavior.
+Alembic must connect with a session-capable database connection string. For local Supabase, use the local Postgres URL (default `127.0.0.1:54322`). For hosted Supabase, use the direct/session database host. Avoid transaction pooler URLs for migrations, because schema migrations, extension setup, and index creation require session-level database behavior.
 
 ## Grounding and Citation Policy
 

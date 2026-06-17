@@ -14,7 +14,7 @@ Full brief: [docs/client-brief.md](docs/client-brief.md)
 | ------------------ | ---------------------------------------------------- |
 | Backend            | Python + FastAPI                                     |
 | Frontend           | Vite + React SPA + TypeScript                        |
-| Database           | Supabase Postgres (users, chats, documents, chunks)  |
+| Database           | Supabase local stack (Docker) for dev + Postgres     |
 | Migrations         | SQLAlchemy models + Alembic                          |
 | Retrieval          | Supabase `pgvector` + Postgres full-text search      |
 | Auth               | Supabase Auth (email only)                           |
@@ -44,14 +44,22 @@ Install these before setting up `backend/` or `frontend/`:
 | [uv](https://docs.astral.sh/uv/getting-started/installation/) | latest | Backend deps + `data/download.py` | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | [Node.js](https://nodejs.org/) | 20+ (LTS) | Frontend toolchain | nodejs.org or `nvm install --lts` |
 | [pnpm](https://pnpm.io/installation) | latest | Frontend package manager | `corepack enable && corepack prepare pnpm@latest --activate` |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | latest | Run local Supabase stack | docker.com |
+| [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) | latest | Manage local Supabase stack | `npm install -g supabase` |
 
-You also need accounts/keys for external services once the app is wired up. Start with [docs/guides/supabase-setup.md](docs/guides/supabase-setup.md) (account + project), then create a [Google Gen AI API key](https://cloud.google.com/genai) when the LLM layer is wired up.
+You also need external service keys once the app is wired up. Start with [docs/guides/supabase-setup.md](docs/guides/supabase-setup.md) (local stack), then create a [Google Gen AI API key](https://cloud.google.com/genai) when the LLM layer is wired up.
 
 ## Running locally
 
-To be added during the build. Setup guides:
+Start local dependencies first:
 
-- [Supabase](docs/guides/supabase-setup.md) — account, hosted project (dashboard or CLI)
+```bash
+supabase start
+```
+
+Then follow setup guides:
+
+- [Supabase](docs/guides/supabase-setup.md) — local Docker stack + env wiring
 - [Backend](docs/guides/backend-setup.md)
 - [Frontend](docs/guides/frontend-setup.md)
 
@@ -66,3 +74,12 @@ uv run data/download.py
 
 By default this downloads the latest 5 10-K filings for AAPL, MSFT, NVDA, AMZN, and GOOGL into year folders under `data/downloads/` and writes a `manifest.json`.
 Downloaded files are gitignored; the `data/` folder itself stays in git for the script and notes.
+
+## Para correr o ambiente virtual
+(Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned) ; (& d:\dev\PythonProjects\document-copilot\backend\.venv\Scripts\Activate.ps1)
+
+## Para correr o backend
+uv run uvicorn app.main:app --reload
+
+## Para aceder à Base de Dados
+Primeiro iniciar o docker desktop, depois correr o comando `supabase start` no terminal, e depois aceder à interface do supabase em `http://127.0.0.1:54323/`
