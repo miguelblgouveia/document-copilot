@@ -1,9 +1,10 @@
 import asyncio
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
+from app.auth.dependencies import AuthUser, get_current_user
 from app.config import settings
 
 app = FastAPI(title=settings.app_name)
@@ -20,6 +21,12 @@ app.add_middleware(
 async def health_check():
     """Health check endpoint."""
     return {"status": "ok"}
+
+
+@app.get("/auth/me")
+async def me(user: AuthUser = Depends(get_current_user)):
+    """Test authenticated endpoint — returns the caller's identity."""
+    return {"id": user.id, "email": user.email}
 
 if __name__ == "__main__":
     try:
