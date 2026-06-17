@@ -4,8 +4,12 @@ import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
 
+import { Button } from "@/components/ui/button"
+
 function App() {
   const [count, setCount] = useState(0)
+  const [contagem, setContagem] = useState(0)   
+  
 
   return (
     <>
@@ -28,6 +32,9 @@ function App() {
         >
           Count is {count}
         </button>
+        <Button onClick={() => setContagem((contagem) => contagem + 1)}>
+                A contagem é {contagem}
+        </Button>
       </section>
 
       <div className="ticks"></div>
