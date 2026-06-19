@@ -81,5 +81,9 @@ Downloaded files are gitignored; the `data/` folder itself stays in git for the 
 ## Para correr o backend
 uv run uvicorn app.main:app --reload
 
+## Para correr o frontend (o backend deve estar a correr primeiro) 
+pnpm install
+pnpm run dev
+
 ## Para aceder à Base de Dados
 Primeiro iniciar o docker desktop, depois correr o comando `supabase start` no terminal, e depois aceder à interface do supabase em `http://127.0.0.1:54323/`

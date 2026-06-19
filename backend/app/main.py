@@ -28,6 +28,13 @@ async def me(user: AuthUser = Depends(get_current_user)):
     """Test authenticated endpoint — returns the caller's identity."""
     return {"id": user.id, "email": user.email}
 
+
+@app.get("/teste")
+async def teste():
+    """Test."""
+    return {"message": "This is a test endpoint."}
+
+
 if __name__ == "__main__":
     try:
         loop = asyncio.get_running_loop()
@@ -36,4 +43,3 @@ if __name__ == "__main__":
     else:
         # Interactive environments (Jupyter/VS Code Interactive) already own the loop.
         loop.create_task(uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=8000)).serve())
-
