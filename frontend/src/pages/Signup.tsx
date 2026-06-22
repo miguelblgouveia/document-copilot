@@ -7,19 +7,33 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase'
 
-export function Signup() {
+export function SignUp() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
+    setMessage(null)
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.')
+      return
+    }
+
     setIsSubmitting(true)
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
     })
@@ -31,24 +45,18 @@ export function Signup() {
       return
     }
 
-    // After successful signup, automatically sign in the user
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    })
-
-    if (signInError) {
-      setError(signInError.message)
+    if (data.session) {
+      navigate('/chats', { replace: true })
       return
     }
 
-    navigate('/chats', { replace: true })
+    setMessage('Account created. Check your email to confirm your address, then sign in.')
   }
 
   return (
     <AuthLayout
-      title="Sign up"
-      description="Create an account to access Document Copilot."
+      title="Create account"
+      description="Sign up with your work email to use Document Copilot."
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-2">
@@ -69,16 +77,34 @@ export function Signup() {
           <Input
             id="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             required
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="confirm-password">Confirm password</Label>
+          <Input
+            id="confirm-password"
+            type="password"
+            autoComplete="new-password"
+            required
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+          />
+        </div>
+
         {error ? (
           <p className="text-sm text-destructive" role="alert">
             {error}
+          </p>
+        ) : null}
+
+        {message ? (
+          <p className="text-sm text-muted-foreground" role="status">
+            {message}
           </p>
         ) : null}
 

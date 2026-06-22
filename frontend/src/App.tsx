@@ -1,32 +1,48 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
-import { Login } from '@/pages/Login'
-import { Signup } from '@/pages/Signup'
-import { Chats } from '@/pages/Chats'
+import { ChatLayout } from '@/components/chat/ChatLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { PublicRoute } from '@/components/PublicRoute'
+import { ChatEmptyPage } from '@/pages/chat/ChatEmptyPage'
+import { ChatThreadPage } from '@/pages/chat/ChatThreadPage'
+import { Login } from '@/pages/Login'
+import { SignUp } from '@/pages/SignUp'
 
 function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        
-        {/* Protected routes */}
-        <Route 
-          path="/chats" 
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicRoute>
+              <SignUp />
+            </PublicRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to="/chats" replace />} />
+        <Route
+          path="/chats"
           element={
             <ProtectedRoute>
-              <Chats />
+              <ChatLayout />
             </ProtectedRoute>
-          } 
-        />
-        
-        {/* Redirect to login if no match */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+          }
+        >
+          <Route index element={<ChatEmptyPage />} />
+          <Route path=":threadId" element={<ChatThreadPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/chats" replace />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   )
 }
 
