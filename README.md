@@ -87,3 +87,6 @@ pnpm run dev
 
 ## Para aceder à Base de Dados
 Primeiro iniciar o docker desktop, depois correr o comando `supabase start` no terminal, e depois aceder à interface do supabase em `http://127.0.0.1:54323/`
+
+## Para carregar os documentos em markdown para a base de dados
+uv run python -m ingest.load_source_documents
