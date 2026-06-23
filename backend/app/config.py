@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     retrieval_rrf_k: int = 60
     retrieval_neighbor_radius: int = 1
     retrieval_fts_config: str = "english"
-    retrieval_fts_keyword_model: str = "gpt-4.1-mini"
+    retrieval_fts_keyword_model: str = "qwen3"
     retrieval_fts_keyword_min: int = 3
     retrieval_fts_keyword_max: int = 5
     retrieval_fts_keyword_fast_path_tokens: int = 5

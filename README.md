@@ -90,3 +90,10 @@ Primeiro iniciar o docker desktop, depois correr o comando `supabase start` no t
 
 ## Para carregar os documentos em markdown para a base de dados
 uv run python -m ingest.load_source_documents
+
+## Para criação dos chunks e embeddings dos documentos carregados na base de dados
+uv run python -m ingest.chunk_and_embed --all
+uv run python -m ingest.chunk_and_embed --accession 0001652044-25-000014 -- Para apenas um documento específico 
+
+## Para testar a procura de documentos
+uv run python ./scripts/smoke_retrieval.py

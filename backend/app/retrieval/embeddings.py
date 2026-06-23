@@ -28,7 +28,7 @@ def embed_query(text: str) -> list[float]:
 
     embedding = embeddings[0]
 
-    expected_dims = settings.genai_embedding_dimensions
+    expected_dims = settings.ollama_embedding_dimensions
 
     if len(embedding) != expected_dims:
         raise ValueError(
