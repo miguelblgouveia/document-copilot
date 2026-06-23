@@ -1,53 +1,69 @@
+"""FastAPI dependencies for Supabase JWT authentication."""
+
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from supabase import acreate_client
+from supabase.lib.client_options import AsyncClientOptions
+from supabase_auth.errors import AuthApiError
 
-from app.database.supabase import get_service_role_supabase_client
+from app.config import settings
 
 _bearer = HTTPBearer(auto_error=False)
 
 
 @dataclass(frozen=True, slots=True)
-class AuthUser:
-    id: str
+class CurrentUser:
+    id: uuid.UUID
     email: str
 
 
-async def get_current_user(
+def _unauthorized(detail: str = "Not authenticated") -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=detail,
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+async def get_access_token(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
-) -> AuthUser:
-    """FastAPI dependency — validates the Supabase JWT and returns the caller.
+) -> str:
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise _unauthorized()
 
-    Raises HTTP 401 if the header is absent, malformed, expired, or revoked.
-    """
-    if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authorization header",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    token = credentials.credentials.strip()
+    if not token:
+        raise _unauthorized()
 
-    token = credentials.credentials
-    client = await get_service_role_supabase_client()
+    return token
+
+
+async def get_current_user(
+    access_token: str = Depends(get_access_token),
+) -> CurrentUser:
+    client = await acreate_client(
+        settings.supabase_url,
+        settings.supabase_anon_key,
+        options=AsyncClientOptions(
+            auto_refresh_token=False,
+            persist_session=False,
+        ),
+    )
 
     try:
-        response = await client.auth.get_user(token)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        response = await client.auth.get_user(jwt=access_token)
+    except AuthApiError as exc:
+        raise _unauthorized("Invalid or expired token") from exc
 
-    user = response.user if response else None
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    if response is None or response.user is None or not response.user.email:
+        raise _unauthorized("Invalid or expired token")
 
-    return AuthUser(id=str(user.id), email=str(user.email))
+    return CurrentUser(
+        id=uuid.UUID(str(response.user.id)),
+        email=response.user.email,
+    )

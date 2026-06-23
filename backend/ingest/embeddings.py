@@ -1,16 +1,11 @@
-"""Google Gen AI embedding generation for document chunks."""
-
-from __future__ import annotations
-
-from google import genai
+import requests
 
 from app.config import settings
 
-EMBED_BATCH_SIZE = 100
+OLLAMA_URL = getattr(settings, "ollama_url", "http://localhost:11434")
+OLLAMA_MODEL = getattr(settings, "ollama_embedding_model", "nomic-embed-text")
 
-
-def _client() -> genai.Client:
-    return genai.Client(api_key=settings.google_api_key)
+EMBED_BATCH_SIZE = 32  # baixar ajuda estabilidade local
 
 
 def embed_texts(
@@ -21,30 +16,28 @@ def embed_texts(
     if not texts:
         return []
 
-    expected_dims = settings.google_embedding_dimensions
     vectors: list[list[float]] = []
-
-    client = _client()
 
     for start in range(0, len(texts), batch_size):
         batch = texts[start : start + batch_size]
 
-        response = client.models.embed_content(
-            model=settings.google_embedding_model,
-            contents=batch,
-            config={
-                "output_dimensionality": expected_dims,
+        response = requests.post(
+            f"{OLLAMA_URL}/api/embed",
+            json={
+                "model": OLLAMA_MODEL,
+                "input": batch,
             },
+            timeout=120,
         )
 
-        for embedding in response.embeddings:
-            vector = embedding.values
+        response.raise_for_status()
 
-            if len(vector) != expected_dims:
-                raise ValueError(
-                    f"Expected embedding dimension {expected_dims}, got {len(vector)}"
-                )
+        data = response.json()
 
-            vectors.append(vector)
+        batch_embeddings = data.get("embeddings")
+        if not batch_embeddings:
+            raise ValueError("No embeddings returned from Ollama")
+
+        vectors.extend(batch_embeddings)
 
     return vectors

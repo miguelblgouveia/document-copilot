@@ -18,9 +18,13 @@ class Settings(BaseSettings):
     supabase_service_role_key: str
     database_url: str
 
-    genai_api_key: str
-    genai_embedding_model: str
-    genai_embedding_dimensions: int
+    # genai_api_key: str
+    # genai_embedding_model: str
+    # genai_embedding_dimensions: int
+
+    ollama_url: str
+    ollama_embedding_model: str
+    ollama_embedding_dimensions: int
 
     # openai_api_key: str
     # openai_embedding_model: str = "text-embedding-3-small"
@@ -41,7 +45,7 @@ class Settings(BaseSettings):
     retrieval_fts_keyword_fast_path_tokens: int = 5
 
     # Comma-separated in .env; use `cors_origins` for the parsed list.
-    allowed_origins: str = "http://localhost:5173"
+    allowed_origins: str = "http://localhost:5173, http://localhost:8000/"
 
     @computed_field
     @property
