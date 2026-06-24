@@ -97,3 +97,9 @@ uv run python -m ingest.chunk_and_embed --accession 0001652044-25-000014 -- Para
 
 ## Para testar a procura de documentos
 uv run python ./scripts/smoke_retrieval.py
+
+## Para testar a procura de documentos e a ontenção de respostas com LLM
+uv run python ./scripts/smoke_assistant.py
+
+## Para correr os testes unitários
+uv run pytest -m "not integration"

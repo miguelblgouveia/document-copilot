@@ -47,6 +47,7 @@ def main() -> None:
     setup_progress_logging()
 
     query = QUERIES[QUERY_KEY]
+
     registry = TurnRegistry()
     deps = DocumentAgentDeps(
         retriever=DocumentRetriever(),
@@ -55,24 +56,31 @@ def main() -> None:
         user_id=uuid.uuid4(),
     )
 
-    print(f"Model: {settings.openai_chat_model}", flush=True)
+    # ✅ Agora usa modelo Ollama
+    print(f"Model: {settings.ollama_llm_model}", flush=True)
     print(f"Query ({QUERY_KEY}): {query}\n", flush=True)
 
     answer = prune_unreferenced_citations(run_document_agent(query, deps))
-    validation = asyncio.run(GroundingValidator().validate(answer, registry))
+
+    validation = asyncio.run(
+        GroundingValidator().validate(answer, registry)
+    )
 
     report_progress(
         f"grounding validation ok={validation.ok} "
         f"insufficient_evidence={answer.insufficient_evidence} "
         f"citations={len(answer.citations)}"
     )
+
     if validation.error:
         report_progress(f"grounding validation error: {validation.error}")
 
     print(f"\ninsufficient_evidence: {answer.insufficient_evidence}", flush=True)
     print(f"validation_ok: {validation.ok}", flush=True)
+
     if validation.error:
         print(f"validation_error: {validation.error}", flush=True)
+
     print(f"\n{answer.answer}\n", flush=True)
 
     for c in answer.citations:

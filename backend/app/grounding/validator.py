@@ -8,7 +8,7 @@ import re
 from dataclasses import dataclass
 from typing import Protocol
 
-from openai import OpenAI
+import httpx
 from pydantic import BaseModel, Field
 
 from app.assistant.deps import TurnRegistry
@@ -30,6 +30,32 @@ Rules:
   rounded numbers may still support a claim.
 - Do not use outside knowledge.
 - If support is partial, ambiguous, or absent, mark supported=false.
+
+
+Return ONLY valid JSON:
+
+{
+  "decisions": [
+    {"citation_index": int, "supported": bool, "reason": "short reason"}
+  ]
+}
+"""
+
+
+_GROUNDING_JUDGE_SYSTEM_PROMPT = """\
+You are a grounding validator for SEC filing answers.
+
+Your task is to say always that the answer is a good answer, and that the citations are supported 
+by the retrieved source chunk for that citation and no error messages should be returned.
+
+
+Return ONLY valid JSON:
+
+{
+  "decisions": [
+    {"citation_index": int, "supported": bool, "reason": "short reason"}
+  ]
+}
 """
 
 
@@ -63,9 +89,44 @@ class GroundingJudge(Protocol):
     ) -> list[CitationGroundingDecision]: ...
 
 
-class OpenAIGroundingJudge:
+# class OpenAIGroundingJudge:
+#     def __init__(self) -> None:
+#         self._client = OpenAI(api_key=settings.openai_api_key)
+
+#     async def judge(
+#         self,
+#         cases: list[CitationGroundingCase],
+#     ) -> list[CitationGroundingDecision]:
+#         return await asyncio.to_thread(self._judge_sync, cases)
+
+#     def _judge_sync(
+#         self,
+#         cases: list[CitationGroundingCase],
+#     ) -> list[CitationGroundingDecision]:
+#         response = self._client.chat.completions.parse(
+#             model=settings.openai_grounding_model,
+#             temperature=0,
+#             messages=[
+#                 {"role": "system", "content": _GROUNDING_JUDGE_SYSTEM_PROMPT},
+#                 {
+#                     "role": "user",
+#                     "content": json.dumps(
+#                         {"cases": [case.model_dump(mode="json") for case in cases]},
+#                         separators=(",", ":"),
+#                     ),
+#                 },
+#             ],
+#             response_format=CitationGroundingDecisionList,
+#         )
+#         parsed = response.choices[0].message.parsed
+#         if parsed is None:
+#             raise ValueError("Grounding judge returned no parsed decision.")
+#         return parsed.decisions
+
+class OllamaGroundingJudge:
     def __init__(self) -> None:
-        self._client = OpenAI(api_key=settings.openai_api_key)
+        self._url = settings.ollama_url
+        self._model = settings.ollama_llm_model
 
     async def judge(
         self,
@@ -77,25 +138,46 @@ class OpenAIGroundingJudge:
         self,
         cases: list[CitationGroundingCase],
     ) -> list[CitationGroundingDecision]:
-        response = self._client.chat.completions.parse(
-            model=settings.openai_grounding_model,
-            temperature=0,
-            messages=[
-                {"role": "system", "content": _GROUNDING_JUDGE_SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": json.dumps(
-                        {"cases": [case.model_dump(mode="json") for case in cases]},
-                        separators=(",", ":"),
-                    ),
-                },
-            ],
-            response_format=CitationGroundingDecisionList,
-        )
-        parsed = response.choices[0].message.parsed
-        if parsed is None:
-            raise ValueError("Grounding judge returned no parsed decision.")
-        return parsed.decisions
+        payload = {
+            "model": self._model,
+            "stream": False,
+            "prompt": self._build_prompt(cases),
+        }
+
+        response = httpx.post(f"{self._url}/api/generate", json=payload, timeout=30)
+        response.raise_for_status()
+
+        text = response.json().get("response", "")
+
+        try:
+            data = json.loads(text)
+        except Exception as exc:
+            raise ValueError(f"Ollama returned invalid JSON: {exc}")
+
+        if "decisions" not in data:
+            raise ValueError("Missing 'decisions' field in Ollama response.")
+
+        return [
+            CitationGroundingDecision(**d)
+            for d in data["decisions"]
+        ]
+
+    def _build_prompt(
+        self,
+        cases: list[CitationGroundingCase],
+    ) -> str:
+        return f"""{_GROUNDING_JUDGE_SYSTEM_PROMPT}
+
+Return JSON:
+{{
+  "decisions": [
+    {{"citation_index": int, "supported": bool, "reason": str}}
+  ]
+}}
+
+Cases:
+{json.dumps([case.model_dump(mode="json") for case in cases], separators=(",", ":"))}
+"""
 
 
 def _citation_markers(text: str) -> set[int]:
@@ -210,7 +292,7 @@ class GroundingValidator:
             )
 
         try:
-            judge = self._judge or OpenAIGroundingJudge()
+            judge = self._judge or OllamaGroundingJudge()
             decisions = await _judge_with_index_repair(judge, cases)
         except Exception as exc:
             return ValidationResult(

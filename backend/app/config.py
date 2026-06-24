@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     ollama_url: str
     ollama_embedding_model: str
     ollama_embedding_dimensions: int
+    ollama_llm_model: str
+    ollama_agent_request_limit: int = 20
+    ollama_agent_temperature: float = 0.0
 
     # openai_api_key: str
     # openai_embedding_model: str = "text-embedding-3-small"
@@ -34,15 +37,15 @@ class Settings(BaseSettings):
     # openai_agent_request_limit: int = 20
     # openai_agent_temperature: float = 0.0
 
-    retrieval_candidate_k: int = 50
-    retrieval_top_k: int = 10
+    retrieval_candidate_k: int = 10 #50
+    retrieval_top_k: int = 2 #10
     retrieval_rrf_k: int = 60
-    retrieval_neighbor_radius: int = 1
+    retrieval_neighbor_radius: int = 0 #1
     retrieval_fts_config: str = "english"
     retrieval_fts_keyword_model: str = "qwen3"
     retrieval_fts_keyword_min: int = 3
     retrieval_fts_keyword_max: int = 5
-    retrieval_fts_keyword_fast_path_tokens: int = 5
+    retrieval_fts_keyword_fast_path_tokens: int = 999 #5
 
     # Comma-separated in .env; use `cors_origins` for the parsed list.
     allowed_origins: str = "http://localhost:5173, http://localhost:8000/"
