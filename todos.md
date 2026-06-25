@@ -204,3 +204,4 @@ Goal: 5 senior analysts can use it for a week and report ≥3 hours saved per an
 | [docs/guides/backend-setup.md](docs/guides/backend-setup.md) | FastAPI + Alembic commands |
 | [docs/guides/frontend-setup.md](docs/guides/frontend-setup.md) | Vite + React scaffold commands |
 
+I have a mono repository with a backend e frontend. I want to deploy both. The backend comunicates with the frontend. The backend is a python application with a fastapi server, and the frontend is a React application built with Vite. I want to deploy both applications on Railway. How can I set up the deployment for both applications so that they can communicate with each other properly?
