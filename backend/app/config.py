@@ -37,15 +37,46 @@ class Settings(BaseSettings):
     # openai_agent_request_limit: int = 20
     # openai_agent_temperature: float = 0.0
 
-    retrieval_candidate_k: int = 10 #50
-    retrieval_top_k: int = 2 #10
+    # Number of candidate chunks fetched from each search arm (semantic + FTS) before
+    # Reciprocal Rank Fusion. Higher → broader recall but slower DB queries.
+    retrieval_candidate_k: int = 10  # production default: 50
+
+    # Final number of top-ranked passages sent to the LLM as context after fusion.
+    # Higher → richer context for complex questions but more tokens consumed per call.
+    retrieval_top_k: int = 2  # production default: 10
+
+    # Damping constant in the RRF formula: score = 1 / (k + rank).
+    # Higher → rank differences matter less (smoother blending of semantic + FTS scores).
+    # Lower → rank-1 results are weighted much more heavily than rank-2+.
+    # 60 is the value from the original RRF paper and is rarely worth changing.
     retrieval_rrf_k: int = 60
-    retrieval_neighbor_radius: int = 0 #1
+
+    # How many adjacent chunks (before and after) to attach to each top-ranked hit.
+    # 0 = return only the matched chunk; 1 = add 1 chunk before + 1 after, etc.
+    # Higher → more surrounding context for the LLM but proportionally more tokens.
+    retrieval_neighbor_radius: int = 0  # production default: 1
+
+    # PostgreSQL text-search dictionary used for stemming and stop-word removal.
+    # Controls how both the query and stored documents are normalised for FTS.
+    # Change to a language-specific config (e.g. "portuguese") for non-English corpora.
     retrieval_fts_config: str = "english"
+
+    # Ollama model used to distil the user query into precise FTS keywords.
+    # Only called when the query exceeds `retrieval_fts_keyword_fast_path_tokens`.
+    # Larger/better models produce more precise keywords at the cost of extra latency.
     retrieval_fts_keyword_model: str = "qwen3"
+
+    # Minimum number of keywords the LLM must return; fewer triggers the deterministic fallback.
     retrieval_fts_keyword_min: int = 3
+
+    # Maximum individual words used in the final FTS query (word-budget cap applied after extraction).
+    # More words → broader FTS match surface but higher risk of irrelevant hits.
     retrieval_fts_keyword_max: int = 5
-    retrieval_fts_keyword_fast_path_tokens: int = 999 #5
+
+    # Queries whose token count is ≤ this threshold skip the LLM extraction and use the
+    # raw query text directly for FTS. At 999 the LLM is effectively never called (fast,
+    # zero extra latency). Lower values (e.g. 5) make the LLM refine longer queries only.
+    retrieval_fts_keyword_fast_path_tokens: int = 999  # production default: 5
 
     # Comma-separated in .env; use `cors_origins` for the parsed list.
     allowed_origins: str = "http://localhost:5173, http://localhost:8000/"
