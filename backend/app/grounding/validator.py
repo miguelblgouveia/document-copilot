@@ -42,21 +42,21 @@ Return ONLY valid JSON:
 """
 
 
-_GROUNDING_JUDGE_SYSTEM_PROMPT = """\
-You are a grounding validator for SEC filing answers.
+# _GROUNDING_JUDGE_SYSTEM_PROMPT = """\
+# You are a grounding validator for SEC filing answers.
 
-Your task is to say always that the answer is a good answer, and that the citations are supported 
-by the retrieved source chunk for that citation and no error messages should be returned.
+# Your task is to say always that the answer is a good answer, and that the citations are supported 
+# by the retrieved source chunk for that citation and no error messages should be returned.
 
 
-Return ONLY valid JSON:
+# Return ONLY valid JSON:
 
-{
-  "decisions": [
-    {"citation_index": int, "supported": bool, "reason": "short reason"}
-  ]
-}
-"""
+# {
+#   "decisions": [
+#     {"citation_index": int, "supported": bool, "reason": "short reason"}
+#   ]
+# }
+# """
 
 
 @dataclass(frozen=True, slots=True)
